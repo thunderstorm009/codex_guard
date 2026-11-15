@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-dev.lock
+      - name: Install package and locked development dependencies
+        run: |
+          python -m pip install --require-hashes -r requirements-dev.lock
+          python -m pip install --no-build-isolation .
+      - name: Run tests
+        run: python -m pytest -v
+      - name: Check CLI help and version
+        run: |
+          codexguard --help
+          python -m codexguard --help
+          codexguard version
+      - name: Scan vulnerable fixture (findings are expected)
+        shell: bash
+        run: |
+          set +e
+          codexguard scan fixtures/vulnerable --quiet
+          scan_status=$?
+          set -e
+          test "$scan_status" -eq 1
+      - name: Scan hardened fixture
+        run: codexguard scan fixtures/hardened --quiet

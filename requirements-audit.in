@@ -1,0 +1,3 @@
+# Supply-chain audit tooling runs on Python 3.12, where its dependencies have
+# patched releases available.
+pip-audit==2.10.1

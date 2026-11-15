@@ -1,0 +1,8 @@
+# Development and test tools, locked for the supported CI matrix (Python 3.11+).
+# pytest 9.0.3 is the patched release for CVE-2025-71176.
+pytest==9.0.3
+ruff==0.17.5
+bandit==1.9.4
+flit_core==4.2.0
+# Keep the Python 3.9 TOML fallback covered by tests on current interpreters.
+tomli==2.5.0

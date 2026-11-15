@@ -1,0 +1,6 @@
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+[mcp_servers.local_review]
+command = "trusted-review-server"
+args = ["--stdio"]

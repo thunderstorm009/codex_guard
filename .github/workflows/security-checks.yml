@@ -1,0 +1,58 @@
+name: security-checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python-security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements-dev.lock
+            requirements-audit.lock
+      - name: Install package and locked development dependencies
+        run: |
+          python -m pip install --require-hashes -r requirements-dev.lock
+          python -m pip install --require-hashes -r requirements-audit.lock
+          python -m pip install --no-build-isolation .
+      - name: Ruff
+        run: ruff check codexguard tests
+      - name: Bandit
+        run: bandit -q -r codexguard
+      - name: Audit locked development dependencies
+        run: pip-audit --requirement requirements-dev.lock
+      - name: Audit locked dependency-audit tools
+        run: pip-audit --requirement requirements-audit.lock
+      - name: Audit runtime dependencies
+        run: pip-audit --requirement requirements.txt
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan working tree with Gitleaks 8.30.1
+        uses: docker://ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb
+        with:
+          args: dir --redact --no-banner --config .gitleaks.toml .
+      - name: Scan Git history with Gitleaks 8.30.1
+        uses: docker://ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb
+        with:
+          args: git --redact --no-banner --config .gitleaks.toml .
