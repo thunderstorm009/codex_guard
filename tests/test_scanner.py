@@ -17,7 +17,12 @@ def test_vulnerable_fixture_detects_expected_rules() -> None:
     ids = {finding["rule_id"] for finding in result.findings}
     assert {"CG-001", "CG-002", "CG-003", "CG-004", "CG-005", "CG-006", "CG-007"} <= ids
     assert result.errors == []
-    assert all("FAKE_NOT_A_REAL_KEY" not in str(finding) for finding in result.findings)
+    secret_findings = [
+        finding for finding in result.findings
+        if finding["rule_id"] == "CG-005" and finding["file"] == ".env.example"
+    ]
+    assert secret_findings
+    assert all("[REDACTED]" in finding["evidence"] for finding in secret_findings)
 
 
 def test_hardened_fixture_has_no_high_severity_findings() -> None:

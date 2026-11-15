@@ -48,3 +48,7 @@ Recorded environment: macOS, Docker CLI and daemon 29.6.2. The first attempt wit
 - Release-readiness recheck on 2026-11-15 after updating the build backend pin: `docker build -t codexguard:release-check -f docker/Dockerfile .` and image inspection **passed**. The updated image again ran the vulnerable fixture with 8 findings / exit 1 and the hardened fixture with 0 findings / exit 0 under the restricted runtime flags above. UID 10001, zero effective capabilities, `NoNewPrivs=1`, and denied writes to the root filesystem and scan mount were rechecked.
 
 The validation used a temporary report directory with permissive mode so UID 10001 could write through the macOS bind mount. Set a private report directory and suitable host permissions for normal use. Docker Desktop on macOS runs containers in a managed Linux VM; shared-folder permissions and resource enforcement still depend on Docker Desktop and host configuration. These results verify the tested controls in this local setup, not complete container isolation.
+
+## Source-tree and release note
+
+The build/runtime evidence above was obtained from the complete local working tree. The existing root Git commit does not include `pyproject.toml` or `fixtures/vulnerable/`; the follow-up release payload prepared in this workspace includes them. Before publication, GitHub was observed empty with no workflow runs on 2026-11-15. Verify the source tree and Actions status after publishing.

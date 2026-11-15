@@ -1,46 +1,75 @@
 # Architecture
 
-CodexGuard is a local Python CLI. It has no subprocess, command execution, or network client in the scan path.
+CodexGuard is a Python CLI that inspects a user-selected directory as untrusted data. The scan path is designed to be offline, read-only, and non-executing. This describes the current source implementation; it is not a claim that every platform or hostile concurrent filesystem condition is fully contained.
 
 ```mermaid
 flowchart TD
     User[Explicit scan root and CLI options] --> CLI[codexguard.cli]
     CLI --> Scanner[codexguard.scanner]
-    Scanner --> Discovery[Bounded descriptor-based discovery]
-    Discovery --> Parser[codexguard.config_parser for TOML]
+    Scanner --> Discovery[Descriptor-based bounded discovery]
+    Discovery --> Parser[codexguard.config_parser]
     Discovery --> Text[Read-only UTF-8 text inputs]
     Parser --> Rules[codexguard.rules]
     Text --> Rules
-    Rules --> Redaction[Redaction before findings]
+    Rules --> Redaction[Redact evidence and result fields]
     Redaction --> Result[ScanResult and ScanError]
     Result --> Reporter[codexguard.reporter]
     Reporter --> Terminal[Text, JSON, Markdown]
     Reporter --> Output[Optional exclusive report file]
 ```
 
-## Module responsibilities
+## Modules
 
-- `cli.py` parses `scan`, `version`, and `rules`, selects threshold/format, and maps outcomes to exit codes. `__main__.py` delegates to the same `main()` function.
-- `constants.py` contains shared app/version, severity, format, and resource-limit constants. `__init__.py` exposes the version without scan side effects.
-- `scanner.py` validates and pins the explicit root, discovers a bounded set of relevant files, inspects them as data, aggregates findings and per-file errors, and tracks limit reports.
-- `config_parser.py` parses TOML bytes using `tomllib` or the Python 3.9/3.10 `tomli` fallback. File reads use bounded descriptor-based access and sanitized errors.
-- `rules.py` loads seven JSON rule records, evaluates parsed settings or inert text, and redacts matched evidence before returning findings.
-- `reporter.py` renders a shared result schema and optionally creates a new report file with exclusive creation outside the scan root.
+- `codexguard.cli` parses `scan`, `version`, and `rules`, validates output format and severity options, renders results, and maps failures/findings to exit codes.
+- `codexguard.__main__` delegates to the same CLI `main()` function. `__init__` exposes version metadata without scan side effects.
+- `codexguard.constants` defines name/version, formats, severities, and default bounds.
+- `codexguard.scanner` validates the explicit scan root, walks the tree, opens relevant files, invokes parsers and rules, and accumulates a `ScanResult` with findings, per-file errors, counters, and limit notices.
+- `codexguard.config_parser` parses TOML using `tomllib` when available and `tomli` on older Python versions. Parser and file errors are normalized into sanitized error objects.
+- `codexguard.rules` contains independent TOML/text evaluators, rule metadata loading, and common secret redaction.
+- `codexguard/reporter.py` renders a consistent result as text, JSON, or Markdown, and safely creates a requested report file.
+- `rules/security_rules.json` is the source rule catalog; `codexguard/security_rules.json` is bundled package data. Tests check the copies stay aligned.
 
-## Data flow and discovery
+## Discovery and resource limits
 
-The caller must supply a scan root. The scanner examines `.codex/config.toml`, files named `AGENTS.md`, and `.env.example` or `.env.*.example`. It counts total entries and directories as well as relevant files, applies depth and file-size bounds, does not descend through symlinked directories, and records reached limits in its summary. Files are opened read-only relative to pinned directory descriptors where supported. Unsupported required traversal primitives fail closed.
+The scanner only starts from the explicit root supplied to `scan`. It considers:
 
-TOML and text are parsed as untrusted data. Instruction text is never followed. MCP command strings, hooks, and scripts are never started. The TOML parser is isolated from filesystem discovery so it can be tested separately.
+- Any file named `AGENTS.md`.
+- `.codex/config.toml` files.
+- `.env.example` and `.env.*.example` files.
 
-## Rule engine and finding generation
+Default bounds in `constants.py` are:
 
-The scanner passes parsed TOML objects and decoded text to independent rule evaluators. Rule metadata is maintained in `rules/security_rules.json` and bundled at `codexguard/security_rules.json` so installed distributions do not depend on the repository layout. A packaging test checks that these copies remain identical. Findings record location, evidence, heuristic assessment, a rule-level confidence label for the pattern match, rationale, and remediation. Confidence does not indicate exploitability or effective runtime behavior. The evidence and text are redacted before serialization. Heuristic findings are review prompts rather than proof of exploitable behavior.
+| Bound | Default |
+|---|---:|
+| Bytes read per file | 1 MiB |
+| Relevant files | 5,000 |
+| Total directory entries visited | 50,000 |
+| Directories visited | 1,000 |
+| Directory depth | 20 |
+| Open directory descriptors | 64 |
 
-## Reporting
+The scan result reports visited counts and any reached limits. Oversized, malformed, and unreadable files are skipped with sanitized per-file errors rather than aborting the entire scan, when the scan root itself remains usable.
 
-Text, JSON, and Markdown render from the same `ScanResult` dictionary. Optional output requires an explicit path outside the scan root and refuses existing files. The writer uses exclusive creation and guarded parent traversal; it removes a partial report when a write fails and can verify the created file identity before cleanup.
+## Secure file reading
 
-## Security boundaries and limitations
+The scanner pins the root and traversed directories with descriptors, opens child paths relative to their parent descriptor, and uses no-follow flags where supported. Symlinked directories are not traversed, and relevant symlink files are not followed. Reads are read-only, regular-file checked, and bounded. The TOML parser's standalone file API separately enforces scan-root containment and bounded descriptor-based reads.
 
-Scans are designed to make no network requests and never execute discovered content. The code does not mutate scan files. Descriptor-relative opening and no-follow flags reduce symlink and path replacement races where supported, but platform semantics and concurrent filesystem changes leave residual risk. Redaction and detections are pattern-based, and discovery covers a defined subset of file types. A report output path is user-selected and must be separate from the scan root.
+These techniques reduce traversal and path-replacement races; they are not a complete race-proof guarantee across all operating systems and filesystems. Required descriptor primitives are checked and unsupported scanner environments fail closed. Windows, network filesystems, unusual mount behavior, and hostile concurrent mutation have not been exhaustively tested. Reads do not intentionally modify files, though some filesystems can update atime as a consequence of a read.
+
+## Parsing, rules, and redaction
+
+TOML is parsed into inert Python data. Text files are decoded as UTF-8 with replacement for invalid bytes. No project instructions are followed. Commands in hooks or MCP configuration are never passed to a shell or process API, and no MCP server is started.
+
+Rule evaluation separates matched evidence from an assessment, confidence label, rationale, and recommendation. The confidence label describes the pattern match; it is not a probability of exploitability. CG-002 considers the approval and sandbox values available in the parsed file, but cannot calculate all effective configuration layers. CG-006 is a low-severity manual-review warning for hook presence, not a claim that the hook is unsafe. The complete rule catalog, examples, and limits are in the [README](../README.md#rules).
+
+The redactor recognizes selected common assignment, token, bearer, URL credential, and private-key forms. It runs before findings enter reports, and report serialization also redacts paths and error fields. Pattern matching is incomplete: unknown encodings, split values, unusual provider formats, and novel secret types can evade it.
+
+## Reporting and CLI behavior
+
+The CLI defaults to human-readable text. JSON and Markdown can be selected with `--format`. A report path is accepted only when explicitly supplied and must resolve outside the scan root. The writer refuses an existing destination and uses exclusive creation; it also rejects symlink destinations and unsafe parent components where supported. Partial output is removed on a failed write. Report directories should be private and controlled because a same-user concurrent process may still race output paths on some platforms.
+
+Exit codes are 0 for a completed scan with no qualifying findings, 1 for qualifying findings, 2 for invalid arguments or root input, and 3 for operational failure. File-level errors appear separately in the report and may coexist with a completed scan.
+
+## Security boundary
+
+The scanner's intended boundary is the explicitly selected tree and bounded data it reads. It does not read arbitrary absolute paths based on scanned content, execute discovered behavior, make network requests, or remediate files. This does not imply complete Codex policy evaluation, full secret detection, or certification. See the [Threat Model](threat-model.md), [Security Model](security-model.md), and [Security Checklist](security-checklist.md).
