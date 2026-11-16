@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">CodexGuard scan workflow</title><desc id="desc">Eight stages from explicit repository root through validation, bounded discovery and reading, parsing, rule evaluation, finding collection, redaction, and report rendering.</desc>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101a32"/><stop offset="1" stop-color="#1c3150"/></linearGradient><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#70b5f4"/></marker><style>.title{font:700 25px system-ui,sans-serif;fill:#f3f7ff}.n{font:700 12px system-ui,sans-serif;fill:#63dfc0}.t{font:700 15px system-ui,sans-serif;fill:#f4f7fc}.s{font:400 12px system-ui,sans-serif;fill:#c1cde0}.box{fill:#1c3151;stroke:#35577d;stroke-width:1.4}.ln{stroke:#70b5f4;stroke-width:2;marker-end:url(#a)}</style></defs>
+  <rect width="1200" height="360" rx="24" fill="url(#bg)"/><text x="48" y="54" class="title">From selected files to a reviewable report</text>
+  <g transform="translate(42 104)">
+    <rect width="125" height="112" rx="14" class="box"/><text x="16" y="29" class="n">01</text><text x="16" y="57" class="t">Root</text><text x="16" y="80" class="s">Explicit path</text>
+    <path d="M130 56H151" class="ln"/><rect x="158" width="125" height="112" rx="14" class="box"/><text x="174" y="29" class="n">02</text><text x="174" y="57" class="t">Validate</text><text x="174" y="80" class="s">Directory + bounds</text>
+    <path d="M288 56H309" class="ln"/><rect x="316" width="125" height="112" rx="14" class="box"/><text x="332" y="29" class="n">03</text><text x="332" y="57" class="t">Discover</text><text x="332" y="80" class="s">Fixed patterns</text>
+    <path d="M446 56H467" class="ln"/><rect x="474" width="125" height="112" rx="14" class="box"/><text x="490" y="29" class="n">04</text><text x="490" y="57" class="t">Read safely</text><text x="490" y="80" class="s">Regular + bounded</text>
+    <path d="M604 56H625" class="ln"/><rect x="632" width="125" height="112" rx="14" class="box"/><text x="648" y="29" class="n">05</text><text x="648" y="57" class="t">Parse</text><text x="648" y="80" class="s">TOML / UTF-8</text>
+    <path d="M762 56H783" class="ln"/><rect x="790" width="125" height="112" rx="14" class="box"/><text x="806" y="29" class="n">06</text><text x="806" y="57" class="t">Evaluate</text><text x="806" y="80" class="s">Seven rules</text>
+    <path d="M920 56H941" class="ln"/><rect x="948" width="125" height="112" rx="14" class="box"/><text x="964" y="29" class="n">07</text><text x="964" y="57" class="t">Redact</text><text x="964" y="80" class="s">Evidence + fields</text>
+    <path d="M1078 56H1098" class="ln"/><rect x="1105" width="82" height="112" rx="14" fill="#24535a" stroke="#4ab9a8" stroke-width="1.4"/><text x="1121" y="29" class="n">08</text><text x="1118" y="57" class="t">Report</text><text x="1118" y="80" class="s">Text / JSON</text>
+  </g>
+  <text x="48" y="282" class="s">Scanned content stays inert throughout; optional output is written only when requested and outside the scan root.</text>
+  <text x="48" y="307" class="s">Filesystem protections reduce risk but do not eliminate every platform or concurrent-mutation race.</text>
+</svg>

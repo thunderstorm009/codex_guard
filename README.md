@@ -1,61 +1,85 @@
 # CodexGuard
 
-CodexGuard is an independent community project and educational security auditing CLI for OpenAI Codex CLI configuration and project files. It is not an official OpenAI product, is not endorsed by OpenAI, and has no official affiliation with OpenAI. It reads a user-selected directory and reports patterns that may deserve manual security review.
+### Audit Before the Agent Acts.
 
-## Problem and goals
+An offline, read-only security auditing CLI that helps identify potentially risky AI-agent configurations and project instructions before an agent interacts with a repository.
 
-Codex configuration, project instructions, hooks, MCP definitions, and environment examples can affect how development work is carried out. CodexGuard provides a small offline review of selected files. It is designed to treat those files as untrusted data, produce evidence with common secrets redacted, and leave the selected tree unchanged.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB.svg)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-CodexGuard is not a policy enforcement system, a malware detector, or proof that a project is safe. Findings are heuristic warnings; a clean report is not a security guarantee.
+**Repository:** [github.com/thunderstorm009/codex_guard](https://github.com/thunderstorm009/codex_guard) · Independent community project; not an official OpenAI product or endorsement.
 
-## Features
+CodexGuard reviews selected local files as untrusted data. It does not execute repository commands, hooks, scripts, MCP servers, or instructions, and it does not intentionally modify the selected tree. Its findings are heuristic review prompts, not proof that a repository is unsafe or safe.
 
-- Explicit scan root; bounded discovery of `AGENTS.md`, `.codex/config.toml`, `.env.example`, and `.env.*.example` files.
-- TOML parsing using `tomllib`, with a `tomli` fallback on Python versions before 3.11.
-- Symlink-aware descriptor-based traversal and bounded reads.
-- Seven independent heuristic rules, with evidence, assessment, confidence, and remediation guidance.
-- Pattern-based redaction of common credential formats in findings, errors, and reports.
-- Text, JSON, and Markdown reports.
-- Optional report output uses exclusive file creation outside the scan root and refuses existing destinations.
-- No automatic fixes.
+![CodexGuard overview](docs/assets/codexguard-overview.svg)
 
-## Security boundaries
+## Why CodexGuard?
 
-- Scanned commands, hooks, scripts, MCP servers, and instructions are never executed or followed.
-- The scan path makes no network requests and does not intentionally write to the scanned tree.
-- Only the explicit scan root is traversed; symlinked directories are not followed.
-- Limits constrain file size, total entries, directories, depth, relevant files, and open directory descriptors.
-- Report files are written only when explicitly requested and must be outside the scan root.
+AI coding agents can read project instructions and configuration that influence how they work. Repositories may contain instructions, agent settings, MCP server definitions, hooks, and example environment files. Reviewing these inputs before agent interaction can help surface settings or text that deserve human attention.
 
-These controls reduce risk; they do not provide complete race protection across every OS and filesystem. Reads can update access time on filesystems configured to do so. Redaction is heuristic and cannot recognize every secret format. Details are in [Security Model](docs/security-model.md) and [Threat Model](docs/threat-model.md).
+CodexGuard offers a small, local-first review with bounded discovery, symlink-aware file handling, common-secret redaction, and terminal, JSON, or Markdown output. It is designed to inspect repository data without interpreting it as instructions or launching configured behavior.
 
-## Python versions
+## How a scan works
 
-Package metadata declares Python `>=3.9`. Python 3.9 and 3.10 are end-of-life and are not security-supported runtimes. The development lock uses pytest 9.0.3 and targets Python 3.11 or newer; pytest 9 does not support Python 3.9. Do not use an affected older pytest release to keep an EOL test environment. The configured release CI matrix is Python 3.11, 3.12, 3.13, and 3.14. Check GitHub Actions results for the exact commit before relying on CI.
+```mermaid
+flowchart LR
+    A[Selected repository] --> B[Validate scan root]
+    B --> C[Bounded file discovery]
+    C --> D[Safe, bounded reads]
+    D --> E[Parse TOML or decode text]
+    E --> F[Seven heuristic rules]
+    F --> G[Collect findings and errors]
+    G --> H[Redact report fields]
+    H --> I[Render text, JSON, or Markdown]
+```
 
-The release preflight passed 63 tests on Python 3.12.16 with locked pytest 9.0.3. A separate Python 3.9.6 run also passed 63 tests using ambient pytest 8.4.2, but that version is affected by CVE-2025-71176; treat that run as functional compatibility evidence only, not secure release validation. See [Dependency Security](docs/dependency-security.md) and [Release Readiness](docs/release-readiness.md).
+Discovery is limited to files named `AGENTS.md`, `.codex/config.toml`, `.env.example`, or `.env.*.example`. The scan uses descriptor-based traversal and no-follow behavior where supported, with limits for file size, entry count, directory count, depth, relevant files, and open directory descriptors. TOML is parsed into data; text is decoded as UTF-8 with replacement. Per-file errors are sanitized and reported separately when scanning can continue.
 
-## Installation
+![CodexGuard scan workflow](docs/assets/codexguard-workflow.svg)
 
-From a complete source tree with `pyproject.toml` present:
+## Architecture
+
+The CLI validates options and the explicit scan root, then the scanner discovers and reads candidate files. TOML files go through `config_parser`; text and parsed configuration go to rule evaluators in `rules`. Findings are collected in a `ScanResult`, redacted before serialization, and rendered by `reporter`. Optional report output uses exclusive file creation outside the scan root and refuses existing destinations.
+
+![CodexGuard architecture](docs/assets/codexguard-architecture.svg)
+
+See the [Architecture Guide](docs/architecture.md) and [Source Code Guide](docs/source-code-guide.md) for the module-by-module walkthrough.
+
+## Security rules
+
+The default severity is shown below. CG-002 is LOW by default and is raised to MEDIUM when the same parsed configuration contains `sandbox_mode = "danger-full-access"`.
+
+| Rule | Default severity | What it checks |
+|---|---:|---|
+| [CG-001 Dangerous Sandbox Configuration](docs/security-rules.md#cg-001--dangerous-sandbox-configuration) | Critical | Selected explicit sandbox values that indicate disabled or bypassed restrictions. |
+| [CG-002 No-Prompt Approval Policy](docs/security-rules.md#cg-002--no-prompt-approval-policy) | Low; conditional Medium | `approval_policy = "never"`, using the sandbox value in that file for severity context. |
+| [CG-003 Suspicious MCP Configuration](docs/security-rules.md#cg-003--suspicious-mcp-configuration) | High | MCP commands with shell, download-to-shell, or inline Python patterns. |
+| [CG-004 CODEX_HOME Redirection](docs/security-rules.md#cg-004--codex_home-redirection) | Medium | `CODEX_HOME` assignments in discovered environment examples. |
+| [CG-005 Potential Secret Exposure](docs/security-rules.md#cg-005--potential-secret-exposure) | High | Values matching selected common credential and private-key patterns. |
+| [CG-006 Hook Requires Manual Review](docs/security-rules.md#cg-006--hook-requires-manual-review) | Low | Presence of a non-empty `hooks` setting; this alone does not mean unsafe behavior. |
+| [CG-007 Suspicious Project Instructions](docs/security-rules.md#cg-007--suspicious-project-instructions) | Medium | A small set of instruction override, exfiltration, and download-to-shell phrases in `AGENTS.md`. |
+
+![CodexGuard security rule map](docs/assets/codexguard-rules.svg)
+
+Rule metadata lives in [`rules/security_rules.json`](rules/security_rules.json) and its packaged copy at [`codexguard/security_rules.json`](codexguard/security_rules.json). Implementations and detection boundaries are described in [Security Rules](docs/security-rules.md).
+
+## Install and use
+
+### Prerequisites
+
+- Python 3.9 or newer. Python 3.9/3.10 remain declared compatibility versions but are end-of-life and not security-supported runtimes.
+- A complete source tree containing `pyproject.toml`.
+
+### Install from a checkout
 
 ```sh
 python3 -m pip install -e .
 codexguard --help
-python3 -m codexguard --help
 ```
 
-For development on Python 3.11 or newer, install the hash-locked tools:
+The application has no third-party runtime dependency on Python 3.11+; Python 3.9/3.10 use the declared `tomli` compatibility dependency.
 
-```sh
-python3 -m pip install --require-hashes -r requirements-dev.lock
-python3 -m pip install --require-hashes -r requirements-audit.lock
-python3 -m pytest -v
-```
-
-The audit lock is targeted at Python 3.12. Runtime dependencies are minimal; `tomli` is used only before Python 3.11.
-
-## Usage
+### Run an audit
 
 ```sh
 codexguard scan ./project
@@ -63,52 +87,17 @@ codexguard scan ./project --format json
 codexguard scan ./project --format markdown
 codexguard scan ./project --min-severity HIGH
 codexguard scan ./project --format json --output ./reports/audit.json
-codexguard version
 codexguard rules
-python3 -m codexguard scan ./project
+codexguard version
 ```
 
-Options:
+`scan_root` is an explicit directory argument; CodexGuard does not choose a repository for you. Supported formats are `text` (default), `json`, and `markdown`. `--output PATH` must point outside the scan root and to a destination that does not already exist. The output directory must already exist. `--min-severity` filters displayed findings and determines the findings exit status; `--severity` is a compatibility alias. `--quiet` suppresses the terminal report.
 
-- `--format`: `text` (default), `json`, or `markdown`.
-- `--output PATH`: create a new report outside the scan root; existing paths are refused.
-- `--min-severity LEVEL`: display and return finding status for findings at or above this severity. `--severity` is a compatibility alias.
-- `--quiet`: do not print the rendered report to standard output.
-- `--version`: print the package version. The `version` subcommand does the same.
+Exit codes are `0` for a completed scan with no qualifying findings, `1` for qualifying findings, `2` for invalid arguments or scan root, and `3` for an operational scan or report-write failure. Per-file errors can appear in a completed report without making the entire scan fatal. Reports contain tool/version, scan summary, findings (rule, location, evidence, assessment, confidence, rationale, recommendation), and scan errors. Confidence describes the pattern match, not exploitability.
 
-Exit codes: `0` completed with no qualifying findings; `1` completed with qualifying findings; `2` invalid arguments or scan root; `3` an operational scan or report-write failure. Per-file errors are reported separately and do not necessarily make the whole scan fatal.
+## Run in Docker
 
-Example from the hardened fixture:
-
-```text
-CodexGuard 0.1.0 — offline security audit
-Root: .../fixtures/hardened
-Files scanned: 2 | skipped: 0 | findings: 0 | errors: 0
-
-No findings.
-```
-
-The vulnerable fixture scan currently reports 3 files, 8 findings across CG-001 through CG-007, 0 errors, and exit code 1. Its credentials are synthetic. Those matches demonstrate rule behavior, not actual compromise.
-
-## Rules
-
-Severity is the rule's default; CG-002 is LOW by default and becomes MEDIUM when `sandbox_mode = "danger-full-access"` is also present. Examples below are synthetic.
-
-| Rule | Default severity | Example match | Limits and manual review |
-|---|---:|---|---|
-| CG-001 Dangerous Sandbox Configuration | CRITICAL | `sandbox_mode = "danger-full-access"` | Recognizes selected explicit values only. Confirm effective settings and whether the value is intentional. |
-| CG-002 No-Prompt Approval Policy | LOW; MEDIUM with unrestricted sandbox value | `approval_policy = "never"` | Does not infer all layered/runtime policy. Check the effective sandbox and approval behavior for this use case. |
-| CG-003 Suspicious MCP Configuration | HIGH | MCP command uses `bash -c`, `python -c`, or download piped to a shell | Shell use is a review signal, not proof of maliciousness; benign wrappers may match and obfuscation may evade detection. Verify source, arguments, and effects. |
-| CG-004 CODEX_HOME Redirection | MEDIUM | `CODEX_HOME=/some/path` in an environment example | Only matches assignment-like lines in scanned environment examples. Verify the actual process environment and target directory. |
-| CG-005 Potential Secret Exposure | HIGH | `API_KEY=[REDACTED]` | Pattern-based coverage is incomplete. Verify safely whether a match is real; rotate a real exposed credential. |
-| CG-006 Hook Requires Manual Review | LOW | A nonempty `hooks` setting | Presence alone is not evidence of unsafe behavior. Review hook triggers, executable, and scope; CodexGuard never runs it. |
-| CG-007 Suspicious Project Instructions | MEDIUM | Text resembling “ignore previous instructions” or secret exfiltration | A small phrase set can miss context or flag benign text. Review surrounding instructions and repository intent. |
-
-Rule definitions are in `rules/security_rules.json` and the packaged copy `codexguard/security_rules.json`. Findings explain evidence and heuristic assessment; confidence refers to the pattern match, not exploitability.
-
-## Docker
-
-The image is configured to run as UID/GID 10001. From a complete source tree:
+The Dockerfile uses a digest-pinned `python:3.12-slim` base image and configures UID/GID `10001:10001`. The container command below disables networking, makes the container root filesystem and scan mount read-only, drops all Linux capabilities, enables no-new-privileges, and sets memory, CPU, and PID limits. Reports use a separate writable mount.
 
 ```sh
 docker build -f docker/Dockerfile -t codexguard:latest .
@@ -120,32 +109,52 @@ docker run --rm --network none --read-only --cap-drop ALL \
   codexguard:latest scan /scan --format json --output /reports/audit.json
 ```
 
-Make the separate report directory writable by UID 10001 and keep the target mount read-only. The command returns 1 for the vulnerable fixture because findings are expected. Docker controls were exercised locally on Docker Desktop for macOS; they do not establish complete isolation or hosted Linux behavior. See [Docker Guide](docs/docker-guide.md).
+The report directory must be writable by UID 10001. The vulnerable fixture is expected to produce findings and return 1. Host kernel, daemon, mount implementation, and permissions still matter; these Docker settings are not a complete isolation guarantee. See the [Docker Guide](docs/docker-guide.md).
 
-## Tests and local checks
+## Tests and fixtures
 
-```sh
-python3 -m pytest -v
-python3 -m codexguard scan fixtures/vulnerable
-python3 -m codexguard scan fixtures/hardened
-```
+The test suite is organized by scanner traversal, TOML parsing, individual rules, reporting, CLI behavior, and package/Docker/workflow metadata. Tests include no-execution and no-network tripwires, bounded and malformed file cases, symlink/path-swap cases, secret-redaction checks, and report destination safety checks. The vulnerable fixture is synthetic and exercises CG-001 through CG-007; the hardened fixture represents a lower-risk baseline. Existing recorded evidence says the vulnerable fixture produces 8 findings over 3 files and the hardened fixture produces none over 2 files. These are prior project records, not checks run for this documentation update.
 
-The final pre-publication test run passed 63 tests on Python 3.12.16 with locked pytest 9.0.3. Earlier recorded matrix runs used Python 3.11–3.14; see [Experiment Results](docs/experiment-results.md). The GitHub workflows are configuration only until actually executed by GitHub.
+See [Tests and Fixtures](docs/tests-and-fixtures.md), [`tests/`](tests/), and [`fixtures/`](fixtures/).
 
-## Limitations
+## Security boundaries and limitations
 
-- Discovery covers a fixed set of filenames and does not establish all effective Codex settings.
-- Rules and secret matching can produce false positives and false negatives.
-- Descriptor-relative operations and no-follow semantics vary across operating systems and filesystems. Same-user concurrent filesystem races cannot be fully ruled out.
-- The scanner does not inspect all host state, validate executable provenance, or remediate configuration.
-- Ordinary reads may update atime on some filesystems.
-- The project is distributed under the MIT License; see [LICENSE](LICENSE).
-- CI workflow files are not a substitute for hosted results. Check the GitHub Actions page for the exact commit before relying on CI status.
+- Detection is heuristic and limited to supported discovery patterns and the seven implemented rules.
+- Findings require context-aware human review. A clean report is not a safety guarantee.
+- CodexGuard does not execute scanned content, automatically remediate findings, or enforce access control over Codex.
+- It does not calculate every effective Codex setting or inspect all host state.
+- Secret redaction and detection cover selected common formats; unknown, split, encoded, or custom secrets may be missed.
+- Filesystem protections reduce risk but cannot eliminate every platform-specific or same-user concurrent race. Ordinary reads can update access time on some filesystems.
 
-## Contributing
+Read the [Security Model](docs/security-model.md), [Threat Model](docs/threat-model.md), and [Security Checklist](docs/security-checklist.md) for scope and residual risks.
 
-Before proposing code changes, run the test suite. Add regression tests for security-sensitive behavior, use synthetic credentials only, and preserve Python 3.9 syntax/runtime compatibility without relying on EOL runtimes as security-supported environments. Never add code that executes scan-target content or makes network requests during a scan. Update documentation to distinguish observed evidence from design intent and heuristic claims.
+## Learning journey
 
-## License
+Follow the hands-on learning path from coding-agent fundamentals through agentic engineering and Docker isolation to CodexGuard's implementation. Each module contains objectives, guided tasks, repository connections, reflection questions, and a place for lab screenshots or notes. The exercises use synthetic examples and avoid asking learners to run untrusted repository content.
 
-CodexGuard is licensed under the [MIT License](LICENSE), copyright (c) 2026 CodexGuard contributors.
+![Learning journey](docs/assets/learning-journey.svg)
+
+**[Start the Poridhi learning path →](docs/learning-path/README.md)**
+
+The learning notes do not claim to reproduce Poridhi's proprietary lab instructions or identify specific lab IDs. Use them alongside the corresponding Poridhi course/labs available to you, and record the actual lab title and date in your notes.
+
+## Project navigation
+
+| Guide | What you'll find |
+|---|---|
+| [Learning Path](docs/learning-path/README.md) | Guided modules and lab-to-project connections. |
+| [Architecture](docs/architecture.md) | Scan data flow, modules, and resource bounds. |
+| [Source Code Guide](docs/source-code-guide.md) | How to navigate the implementation. |
+| [Security Model](docs/security-model.md) | Implemented controls and important limits. |
+| [Threat Model](docs/threat-model.md) | Assets, threats, assumptions, and residual risks. |
+| [Security Rules](docs/security-rules.md) | Exact rule behavior and severity. |
+| [Docker Guide](docs/docker-guide.md) | Image design and restricted execution example. |
+| [Tests and Fixtures](docs/tests-and-fixtures.md) | Test organization and synthetic sample repositories. |
+| [Contributing](CONTRIBUTING.md) | Change and documentation guidelines. |
+| [Project Status](docs/project-status.md) · [Experiment Results](docs/experiment-results.md) | Existing dated verification records and their scope. |
+
+## From learning to implementation
+
+CodexGuard turns ideas from secure AI-assisted development and infrastructure engineering into a concrete audit workflow: define a trust boundary, treat repository content as inert input, bound filesystem work, make container permissions explicit, and present evidence for human review. The project is an educational and practical tool, not a substitute for careful configuration review or defense in depth.
+
+Licensed under the [MIT License](LICENSE).
