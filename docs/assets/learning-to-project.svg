@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1150" height="380" viewBox="0 0 1150 380" role="img" aria-labelledby="title desc">
+  <title id="title">Learning modules mapped to CodexGuard</title><desc id="desc">Agent context maps to instruction and configuration rules; agentic engineering to MCP and hooks review; Docker concepts to the container profile; AWS topics to background only; CI concepts to local workflows; AWS network concepts to Docker network isolation, not AWS deployment.</desc>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101a32"/><stop offset="1" stop-color="#1c304c"/></linearGradient><style>.h{font:700 23px system-ui,sans-serif;fill:#f5f8ff}.t{font:700 14px system-ui,sans-serif;fill:#f3f7fc}.s{font:400 12px system-ui,sans-serif;fill:#bfcede}.cap{font:700 10px system-ui,sans-serif;fill:#70dec5;letter-spacing:.8px}.card{fill:#1e3452;stroke:#3c5d82;stroke-width:1.3}.dashed{fill:#293246;stroke:#777d8c;stroke-width:1.3;stroke-dasharray:5 4}</style></defs>
+  <rect width="1150" height="380" rx="24" fill="url(#bg)"/><text x="42" y="48" class="h">Learning concepts → actual project surface</text>
+  <g transform="translate(40 88)">
+    <rect width="330" height="72" rx="13" class="card"/><text x="18" y="27" class="cap">LABS 01–02 · AGENT CONTEXT + TOOLS</text><text x="18" y="52" class="t">AGENTS.md · config.toml · CG-001–007</text>
+    <rect y="84" width="330" height="72" rx="13" class="card"/><text x="18" y="111" class="cap">LAB 03 · DOCKER BOUNDARIES</text><text x="18" y="136" class="t">Dockerfile + restricted run flags</text>
+    <rect y="168" width="330" height="72" rx="13" class="dashed"/><text x="18" y="195" class="cap">LAB 04 · AWS BASICS</text><text x="18" y="220" class="t">Background only · no AWS client</text>
+    <rect y="252" width="330" height="72" rx="13" class="dashed"/><text x="18" y="279" class="cap">LAB 05 · COMPOSE</text><text x="18" y="304" class="t">Possible packaging · no Compose file</text>
+    <rect x="442" y="42" width="330" height="72" rx="13" class="card"/><text x="460" y="69" class="cap">LAB 06 · GITHUB ACTIONS</text><text x="460" y="94" class="t">tests.yml · security-checks.yml</text>
+    <rect x="442" y="210" width="330" height="72" rx="13" class="card"/><text x="460" y="237" class="cap">LAB 07 · NETWORKING</text><text x="460" y="262" class="t">Docker --network none · no VPC</text>
+    <rect x="854" y="126" width="210" height="105" rx="15" fill="#164348" stroke="#39887f" stroke-width="1.5"/><text x="876" y="159" class="cap">CODExGUARD</text><text x="876" y="186" class="t">Local audit CLI</text><text x="876" y="209" class="s">review evidence</text>
+  </g>
+  <text x="42" y="360" class="s">Solid cards point to repository implementation; dashed cards are learning context without a direct component.</text>
+</svg>

@@ -1,6 +1,6 @@
 # CodexGuard Project Status
 
-**Snapshot:** 2026-11-15, immediately before the authorized publication commit/push. The repository and Actions status below describe the pre-publication check; verify GitHub Actions after publication.
+**Historical snapshot:** 2026-11-15, immediately before the first publication commit/push. The repository and Actions status below describe that pre-publication check, not the current branch contents.
 
 ## Project overview
 
@@ -46,8 +46,12 @@ CodexGuard is an independent community educational CLI for offline, read-only he
 - Descriptor protections and Docker controls are platform-dependent; concurrent filesystem races remain a limitation.
 - Python 3.9 and 3.10 are EOL and are not security-supported runtimes.
 
-## Next steps
+## Next steps recorded at the historical snapshot
 
-1. Publish the reviewed complete release payload to the verified empty remote with a normal push.
+1. Publish the reviewed complete release payload to the verified empty remote with a normal push. *(Completed after this snapshot; see note below.)*
 2. Inspect the `tests` and `security-checks` GitHub Actions runs and record actual outcomes.
 3. Address any genuine failures without reducing test or security coverage.
+
+## Later documentation publication
+
+The documentation updates were published to `https://github.com/thunderstorm009/codex_guard` on the default branch `main` after this 2026-11-15 status snapshot. The following documentation overhaul commit updated the README, added visual diagrams and seven lab guides, and expanded architecture, security, source, CLI, report, usage, and contribution documentation. It did not run tests. This addendum is a publication note only and does not replace a fresh implementation/security status review.

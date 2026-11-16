@@ -48,6 +48,6 @@ Package metadata declares Python `>=3.9` for compatibility. Python 3.9 and 3.10 
 
 The current local Python 3.9.6 test run used pytest 8.4.2 and passed 63 tests, but that pytest version is affected. Treat the run only as historical/functional compatibility evidence, not as a secure development environment or supported-runtime CI result. Use the locked Python 3.11+ toolchain for release testing.
 
-## Current release boundary
+## Historical pre-publication boundary note
 
-Local tests, static checks, Docker tests, and Git history scans are evidence only for the commands and files actually exercised. At the pre-publication check on 2026-11-15, GitHub showed the intended repository as empty with zero registered workflows and zero workflow runs. Remote CI must be checked after publication. The existing local root commit omits package metadata and the vulnerable fixture referenced by its workflows; the current release payload prepares these files for a follow-up commit. See [Release Readiness](release-readiness.md) for the verified pre-publication evidence.
+Local tests, static checks, Docker tests, and Git history scans are evidence only for the commands and files actually exercised. At the pre-publication check on 2026-11-15, GitHub showed the intended repository as empty with zero registered workflows and zero workflow runs. That observation is historical, not the current repository state. The 2026-11-15 release-readiness document preserves its pre-publication scope; check Actions for the exact commit before claiming hosted CI results.

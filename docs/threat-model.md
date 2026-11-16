@@ -59,7 +59,7 @@ Rules match selected explicit settings and text patterns. A benign shell wrapper
 - Atime updates may happen as a filesystem consequence of reading.
 - Redaction does not cover all secrets. A clean Gitleaks or CodexGuard scan does not establish absence of credentials.
 - Docker restrictions depend on host kernel, daemon, and (on macOS) Docker Desktop's managed Linux VM and shared-folder behavior.
-- The current GitHub repository was observed empty with no registered workflows or runs on 2026-11-15. Local workflow files are not remote CI evidence, and the committed local tree lacks files those workflows reference.
+- Historical note: on 2026-11-15, before publication, GitHub was observed empty with no registered workflows or runs. That point-in-time observation and the missing-file assessment are not statements about the current published repository. Local workflow files still are not proof of a hosted CI result.
 
 ## Out of scope
 

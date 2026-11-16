@@ -2,6 +2,10 @@
 
 CodexGuard is a Python CLI that inspects a user-selected directory as untrusted data. The scan path is designed to be offline, read-only, and non-executing. This describes the current source implementation; it is not a claim that every platform or hostile concurrent filesystem condition is fully contained.
 
+![CodexGuard module architecture](assets/codexguard-architecture.svg)
+
+Related views: [scan workflow](assets/codexguard-workflow.svg), [rule evaluation](assets/rule-evaluation.svg), [filesystem boundary](security/filesystem-safety.md), and [CLI reporting](assets/cli-reporting.svg).
+
 ```mermaid
 flowchart TD
     User[Explicit scan root and CLI options] --> CLI[codexguard.cli]
@@ -60,7 +64,7 @@ These techniques reduce traversal and path-replacement races; they are not a com
 
 TOML is parsed into inert Python data. Text files are decoded as UTF-8 with replacement for invalid bytes. No project instructions are followed. Commands in hooks or MCP configuration are never passed to a shell or process API, and no MCP server is started.
 
-Rule evaluation separates matched evidence from an assessment, confidence label, rationale, and recommendation. The confidence label describes the pattern match; it is not a probability of exploitability. CG-002 considers the approval and sandbox values available in the parsed file, but cannot calculate all effective configuration layers. CG-006 is a low-severity manual-review warning for hook presence, not a claim that the hook is unsafe. The complete rule catalog, examples, and limits are in the [README](../README.md#rules).
+Rule evaluation separates matched evidence from an assessment, confidence label, rationale, and recommendation. The confidence label describes the pattern match; it is not a probability of exploitability. CG-002 considers the approval and sandbox values available in the parsed file, but cannot calculate all effective configuration layers. CG-006 is a low-severity manual-review warning for hook presence, not a claim that the hook is unsafe. The complete rule catalog, examples, and limits are in [Security Rules](security-rules.md).
 
 The redactor recognizes selected common assignment, token, bearer, URL credential, and private-key forms. It runs before findings enter reports, and report serialization also redacts paths and error fields. Pattern matching is incomplete: unknown encodings, split values, unusual provider formats, and novel secret types can evade it.
 

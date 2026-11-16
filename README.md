@@ -95,6 +95,20 @@ codexguard version
 
 Exit codes are `0` for a completed scan with no qualifying findings, `1` for qualifying findings, `2` for invalid arguments or scan root, and `3` for an operational scan or report-write failure. Per-file errors can appear in a completed report without making the entire scan fatal. Reports contain tool/version, scan summary, findings (rule, location, evidence, assessment, confidence, rationale, recommendation), and scan errors. Confidence describes the pattern match, not exploitability.
 
+The CLI renders **text** by default and also supports **JSON** and **Markdown**. Save a report with `--output` to a new path outside the scan root; the output parent must already exist. See [CLI Reference](docs/usage/cli-reference.md) and [Report Formats](docs/usage/report-formats.md).
+
+## Project structure
+
+```text
+codexguard/          CLI, scanner, parser, rules, reporter, packaged rule data
+rules/               source security rule catalog
+tests/               scanner, parser, rules, reporter, CLI, and packaging tests
+fixtures/            synthetic vulnerable and hardened sample repositories
+docker/              digest-pinned Python image definition
+.github/workflows/   repository test and security-check workflows
+docs/                architecture, security, usage, evidence, and learning guides
+```
+
 ## Run in Docker
 
 The Dockerfile uses a digest-pinned `python:3.12-slim` base image and configures UID/GID `10001:10001`. The container command below disables networking, makes the container root filesystem and scan mount read-only, drops all Linux capabilities, enables no-new-privileges, and sets memory, CPU, and PID limits. Reports use a separate writable mount.
@@ -134,14 +148,15 @@ Follow the hands-on learning path from coding-agent fundamentals through agentic
 
 ![Learning journey](docs/assets/learning-journey.svg)
 
-**[Start the Poridhi learning path →](docs/learning-path/README.md)**
+**[Start the seven-module learning path →](docs/learning-path/README.md)** · [Learning-to-project mapping](docs/learning-path/LEARNING-TO-CODEXGUARD.md)
 
-The learning notes do not claim to reproduce Poridhi's proprietary lab instructions or identify specific lab IDs. Use them alongside the corresponding Poridhi course/labs available to you, and record the actual lab title and date in your notes.
+Each standalone guide links to the requested Poridhi module. The source pages did not expose lesson bodies to this documentation pass, so the guides distinguish the topics supplied in the project brief from verified CodexGuard implementation facts and do not invent Poridhi commands or results.
 
 ## Project navigation
 
 | Guide | What you'll find |
 |---|---|
+| [Documentation Index](docs/README.md) | Browse technical guides by topic. |
 | [Learning Path](docs/learning-path/README.md) | Guided modules and lab-to-project connections. |
 | [Architecture](docs/architecture.md) | Scan data flow, modules, and resource bounds. |
 | [Source Code Guide](docs/source-code-guide.md) | How to navigate the implementation. |
@@ -150,6 +165,8 @@ The learning notes do not claim to reproduce Poridhi's proprietary lab instructi
 | [Security Rules](docs/security-rules.md) | Exact rule behavior and severity. |
 | [Docker Guide](docs/docker-guide.md) | Image design and restricted execution example. |
 | [Tests and Fixtures](docs/tests-and-fixtures.md) | Test organization and synthetic sample repositories. |
+| [CLI Reference](docs/usage/cli-reference.md) · [Report Formats](docs/usage/report-formats.md) | Exact flags, output structures, and exit codes. |
+| [Filesystem Safety](docs/security/filesystem-safety.md) | Descriptor traversal, resource limits, and residual races. |
 | [Contributing](CONTRIBUTING.md) | Change and documentation guidelines. |
 | [Project Status](docs/project-status.md) · [Experiment Results](docs/experiment-results.md) | Existing dated verification records and their scope. |
 

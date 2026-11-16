@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Review date:** 2026-11-15. **Scope:** pre-publication verification of the complete local CodexGuard tree after MIT license addition. This is an evidence record, not security certification.
+**Review date:** 2026-11-15. **Scope:** pre-publication verification of the complete local CodexGuard tree after MIT license addition. This is a historical evidence record, not security certification or current CI status.
 
 ## Summary
 
@@ -56,9 +56,9 @@ The previously available history scan of the existing one-commit local history p
 - No credential `.env` file or private key is included. The synthetic `fixtures/vulnerable/.env.example` is intentionally part of test fixtures and was included in the Gitleaks scan.
 - The project now includes the requested root MIT License. No existing copyright notice was removed or edited.
 
-## Remote CI
+## Remote CI at the historical review date
 
-**NOT RUN before publication.** GitHub showed the repository empty, with zero registered workflows and zero workflow runs at the pre-publication check. After the authorized push, inspect both `tests` and `security-checks` runs by commit SHA and update the handover with observed job results. Do not infer success from local tests.
+**NOT RUN as of this 2026-11-15 pre-publication check.** GitHub showed the repository empty, with zero registered workflows and zero workflow runs. Do not infer a later hosted result from this snapshot or from local tests; inspect the Actions page by commit SHA.
 
 ## Remaining limitations
 
